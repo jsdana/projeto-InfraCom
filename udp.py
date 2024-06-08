@@ -1,4 +1,3 @@
-import socket as skt
 import time
 import os
 import socket as skt 
