@@ -9,8 +9,13 @@ Ao fim da primeira execução, será criada uma pasta "received_files" no diret�
 # Grupo
 
 Ianne Vitoria Cruz Fernandes (ivcf)
+
 Juliana Silva (js3)
+
 Rafaela Albert de Carvalho (rac4)
+
 Lucas Morais de Araújo (lma6)
+
 Camila Barbosa Vieira (cbv2)
+
 José Vinicius de Santana Souza (jvss2)
