@@ -1,7 +1,6 @@
 import socket as skt
 from commands import *
 from entities import *
-
 from udp import UDP
 
 MAX_BUFF = 1024
@@ -17,8 +16,8 @@ def get_login_by_client_address(client_address):
     return None
 
 class UDPServer(UDP):
-    def __init__(self, skct_family, skct_type, skct_biding, max_buff=1024):
-        super().__init__(skct_family, skct_type, skct_biding, max_buff)
+    def _init_(self, skct_family, skct_type, skct_biding, max_buff=1024):
+        super()._init_(skct_family, skct_type, skct_biding, max_buff)
         self.switch = {
             Commands.LOGIN.value: self.handle_login,
             Commands.LOGOUT.value: self.handle_logout,
@@ -46,8 +45,10 @@ class UDPServer(UDP):
 
     def handle_login(self, args, client_address):
         if len(args) == 2:
-            connections[args[1]] = client_address
-            message = "Você está online!"
+            if args[1] not in list(connections.keys()):
+                connections[args[1]] = client_address
+                message = "Você está online!"
+            else: message = "Usuário já logado. Hacker c4n4lh4!" 
         else:
             message = "Argumento invalido."
 
@@ -72,115 +73,139 @@ class UDPServer(UDP):
             nome_acomodacao = args[1]
             localizacao = args[2]
 
-            found = False
-            for acmd in acomodacoes:
-                if acmd.nome == nome_acomodacao and acmd.localizacao == localizacao:
-                    message = "Uma acomodação de mesmo nome e localização já foi registrada."
-                    found = True
-                
-            if not found:
-                acomodacoes.append(Acomodacao(nome_acomodacao, localizacao, login_dono, client_address))
-                message = f"Acomodação de nome {nome_acomodacao} na localizacao '{localizacao}' criada com sucesso!"
+            if login_dono == None:
+                message = "Você não tem acesso a esse recurso."
 
-                for login in list(connections.keys()):
-                    if login != login_dono:
-                        broadcast_message = f"[{login_dono}/{client_address}:{self.get_skct()}] Criou a acomodação '{args[1]}' na localização '{args[2]}'."
-                        self.send(connections[login], broadcast_message.encode())
+            else:
+                found = False
+                for acmd in acomodacoes:
+                    if acmd.nome == nome_acomodacao and acmd.localizacao == localizacao:
+                        message = "Uma acomodação de mesmo nome e localização já foi registrada."
+                        found = True
+                    
+                if not found:
+                    acomodacoes.append(Acomodacao(nome_acomodacao, localizacao, login_dono, client_address))
+                    message = f"Acomodação de nome {nome_acomodacao} na localizacao '{localizacao}' criada com sucesso!"
+
+                    for login in list(connections.keys()):
+                        if login != login_dono:
+                            broadcast_message = f"[{login_dono}/{client_address}:{self.get_skct()}] Criou a acomodação '{args[1]}' na localização '{args[2]}'."
+                            self.send(connections[login], broadcast_message.encode())
+
         else:
             message = "Argumentos invalidos."
-
+        
         self.send(client_address, message.encode())
 
     def handle_list_my_acmd(self, args, client_address):
         login_dono = get_login_by_client_address(client_address)
 
-        foundAcmdForClient = False
-        for acmd in acomodacoes:
-            if acmd.login_dono == login_dono:
-                dias_disponiveis = []
-                dias_indisponiveis = []
+        if login_dono == None:
+            message = "Você não tem acesso a esse recurso."
 
-                for reserva in acmd.reservas:
-                    if reserva.booker is None:
-                        dias_disponiveis.append(reserva.data)
-                    else:
-                        dias_indisponiveis.append(f"{reserva.data} -> Reservado por '{reserva.booker.nome}/{reserva.booker.ip}:{reserva.booker.socket}'")
+        else:
+            foundAcmdForClient = False
+            for acmd in acomodacoes:
+                if acmd.login_dono == login_dono:
+                    dias_disponiveis = []
+                    dias_indisponiveis = []
 
-                message = f"""Acomodação: '{acmd.nome}'
+                    for reserva in acmd.reservas:
+                        if reserva.booker is None:
+                            dias_disponiveis.append(reserva.data)
+                        else:
+                            dias_indisponiveis.append(f"{reserva.data} -> Reservado por '{reserva.booker.nome}/{reserva.booker.ip}:{reserva.booker.socket}'")
+
+                    message = f"""Acomodação: '{acmd.nome}'
 Localização: '{acmd.localizacao}'
 Dias disponiveis: '{dias_disponiveis}'
 Dias indisponiveis: '{dias_indisponiveis}'
                 """
-                self.send(client_address, message.encode())
-                foundAcmdForClient = True
 
-        if not foundAcmdForClient:
-            self.send(client_address, "Você não possui acomodações registradas.".encode())
+                    self.send(client_address, message.encode())
+                    foundAcmdForClient = True
+
+            if not foundAcmdForClient:
+                self.send(client_address, "Você não possui acomodações registradas.".encode())
 
     def handle_list_acmd(self, args, client_address):
-        for acmd in acomodacoes:
-            dias_disponiveis = []
+        login_dono = get_login_by_client_address(client_address)
 
-            for reserva in acmd.reservas:
-                if reserva.booker is None:
-                    dias_disponiveis.append(reserva.data)
+        if login_dono == None:
+            message = "Você não tem acesso a esse recurso."
 
-            message = f"""Id: '{acmd.id}'
+        else:
+            for acmd in acomodacoes:
+                dias_disponiveis = []
+
+                for reserva in acmd.reservas:
+                    if reserva.booker is None:
+                        dias_disponiveis.append(reserva.data)
+
+                message = f"""Id: '{acmd.id}'
 Acomodação: '{acmd.nome}'
 Localização: '{acmd.localizacao}'
 Descrição: '{acmd.descricao}'
 Dias disponiveis: '{dias_disponiveis}'
 Nome do ofertante: '{acmd.login_dono}'
             """
-            self.send(client_address, message.encode())
+                self.send(client_address, message.encode())
 
 
     def handle_list_my_rsv(self, args, client_address):
         login_cliente = get_login_by_client_address(client_address)
 
-        foundReservartionForClient = False
-        for acmd in acomodacoes:
-            for reserva in acmd.reservas:
-                if reserva.booker is not None:
-                    if reserva.booker.nome == login_cliente:
-                        message = f"[{acmd.login_dono}/{acmd.ip_dono}:{self.get_skct()}]: Reserva em '{acmd.nome}' localizada em '{acmd.localizacao}' no dia '{reserva.data}'"
-                        self.send(client_address, message.encode())
-                        foundReservartionForClient = True
+        if login_cliente == None:
+            message = "Você não tem acesso a esse recurso."
 
-        if not foundReservartionForClient:
-            message = "Não foi possível achar reservas."
-            self.send(client_address, message.encode())
+        else:
+            foundReservartionForClient = False
+            for acmd in acomodacoes:
+                for reserva in acmd.reservas:
+                    if reserva.booker is not None:
+                        if reserva.booker.nome == login_cliente:
+                            message = f"[{acmd.login_dono}/{acmd.ip_dono}:{self.get_skct()}]: Reserva em '{acmd.nome}' localizada em '{acmd.localizacao}' no dia '{reserva.data}'"
+                            self.send(client_address, message.encode())
+                            foundReservartionForClient = True
+
+            if not foundReservartionForClient:
+                message = "Não foi possível achar reservas."
+                self.send(client_address, message.encode())
 
     def handle_book(self, args, client_address):
         if len(args) == 4:
             login_cliente = get_login_by_client_address(client_address)
-            nome_ofertante = args[1]
-            id_oferta = args[2]
-            dia_requerido = args[3]
+            if login_cliente == None:
+                message = "Você não tem acesso a esse recurso."
 
-            fail = True
-            for acmd in acomodacoes:
-                if acmd.id == int(id_oferta):
-                    if acmd.login_dono == nome_ofertante:
-                        if acmd.login_dono != login_cliente:
-                            reserva = None
-                            for rsv in acmd.reservas:
-                                if rsv.data == dia_requerido:
-                                    if rsv.booker == None:
-                                        reserva = rsv
-                                        break
-                            if reserva is not None:
-                                reserva.book(Booker(login_cliente, client_address, self.get_skct()))
-                                message = f"[{login_cliente}/{client_address}:{self.get_skct()}]: Reserva em '{acmd.nome}' localizada em '{acmd.localizacao}' no dia '{reserva.data}' realizada com sucesso."
-                                self.send(acmd.ip_dono, message.encode())
-                                message = "Reserva realizada com sucesso."
-                                self.send(client_address, message.encode())
-                                fail = False
-                                break
+            else:
+                nome_ofertante = args[1]
+                id_oferta = args[2]
+                dia_requerido = args[3]
 
-            if fail:
-                message = "Não foi possível realizar a reserva."
-                self.send(client_address, message.encode())
+                fail = True
+                for acmd in acomodacoes:
+                    if acmd.id == int(id_oferta):
+                        if acmd.login_dono == nome_ofertante:
+                            if acmd.login_dono != login_cliente:
+                                reserva = None
+                                for rsv in acmd.reservas:
+                                    if rsv.data == dia_requerido:
+                                        if rsv.booker == None:
+                                            reserva = rsv
+                                            break
+                                if reserva is not None:
+                                    reserva.book(Booker(login_cliente, client_address, self.get_skct()))
+                                    message = f"[{login_cliente}/{client_address}:{self.get_skct()}]: Reserva em '{acmd.nome}' localizada em '{acmd.localizacao}' no dia '{reserva.data}' realizada com sucesso."
+                                    self.send(acmd.ip_dono, message.encode())
+                                    message = "Reserva realizada com sucesso."
+                                    self.send(client_address, message.encode())
+                                    fail = False
+                                    break
+
+                if fail:
+                    message = "Não foi possível realizar a reserva."
+                    self.send(client_address, message.encode())
 
         else:
             message = "Argumentos invalidos."
@@ -193,35 +218,40 @@ Nome do ofertante: '{acmd.login_dono}'
             id_oferta = args[2]
             dia_requerido = args[3]
 
-            fail = True
-            for acmd in acomodacoes:
-                if acmd.id == int(id_oferta):
-                    if acmd.login_dono == nome_ofertante:
-                        for rsv in acmd.reservas:
-                            if rsv.data == dia_requerido:
-                                if rsv.unbook(Booker(login_cliente, client_address, self.get_skct())):  
-                                    message = f"[{login_cliente}/{client_address}:{self.get_skct()}]: Reserva em '{acmd.nome}' localizada em '{acmd.localizacao}' no dia '{rsv.data}' foi cancelada."
-                                    self.send(acmd.ip_dono, message.encode())
-                                    message = "Reserva cancelada com sucesso."
-                                    self.send(client_address, message.encode())
-                                    fail = False
+            if login_cliente == None:
+                message = "Você não tem acesso a esse recurso."
 
-                                    for login in list(connections.keys()):
-                                        if login != acmd.login_dono:
-                                            broadcast_message = f"[{acmd.login_dono}/{acmd.ip_dono}:{self.get_skct()}] Novas disponibilidades para a acomodação '{acmd.nome}' localizada em '{acmd.localizacao}' com id '{acmd.id}'."
-                                            self.send(connections[login], broadcast_message.encode())
-                                    break
+            else:
+                fail = True
+                for acmd in acomodacoes:
+                    if acmd.id == int(id_oferta):
+                        if acmd.login_dono == nome_ofertante:
+                            for rsv in acmd.reservas:
+                                if rsv.data == dia_requerido:
+                                    if rsv.unbook(Booker(login_cliente, client_address, self.get_skct())):  
+                                        message = f"[{login_cliente}/{client_address}:{self.get_skct()}]: Reserva em '{acmd.nome}' localizada em '{acmd.localizacao}' no dia '{rsv.data}' foi cancelada."
+                                        self.send(acmd.ip_dono, message.encode())
+                                        message = "Reserva cancelada com sucesso."
+                                        self.send(client_address, message.encode())
+                                        fail = False
 
-            if fail:
-                message = "Não foi possível realizar o cancelamento da reserva."
-                self.send(client_address, message.encode())
+                                        for login in list(connections.keys()):
+                                            if login != acmd.login_dono:
+                                                broadcast_message = f"[{acmd.login_dono}/{acmd.ip_dono}:{self.get_skct()}] Novas disponibilidades para a acomodação '{acmd.nome}' localizada em '{acmd.localizacao}' com id '{acmd.id}'."
+                                                self.send(connections[login], broadcast_message.encode())
+                                        break
+
+                if fail:
+                    message = "Não foi possível realizar o cancelamento da reserva."
+                    self.send(client_address, message.encode())
 
         else:
             message = "Argumentos invalidos."
             self.send(client_address, message.encode())
 
-if __name__ == "__main__":
-    server_ip = "127.0.0.1" # sys.argv[1]
+if _name_ == "_main_":
+
+    server_ip = "127.0.0.1" 
     
     server = UDPServer(skt.AF_INET, skt.SOCK_DGRAM, (server_ip, 8007))
     server.handle_messages()
