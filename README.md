@@ -1,5 +1,8 @@
 # Projeto da Disciplina Infraestrutura de Comunicações - 2024.1
 
+## Vídeo da Apresentação
+[Link do Video da Apresentação](https://drive.google.com/file/d/1AGefyYOclOOmUpn8hmykRRnasJS1g2aK/view?usp=sharing)
+
 ## Visão Geral
 Este projeto é dividido em três partes e faz parte da disciplina Infraestrutura de Comunicações, 2024.1. O objetivo é desenvolver um sistema de comunicação cliente-servidor utilizando UDP, implementar um protocolo básico de transferência confiável e, finalmente, criar um sistema de reserva de acomodações.
 
