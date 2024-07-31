@@ -1,0 +1,42 @@
+- Servidor UDP
+    - Estar disponivel em um ip/porta
+    - Conexão criada -> porta pra o cliente
+    - Funcionalidades:
+        - login <nome>
+            - Pegar o <nome> passado e associar ele ao ip;porta
+            - Registrar isso em um dicionário 
+            - Garantir que o usuário precisa estar logado para acessar as outras funcionalidades
+            - Dois usuários não podem se conectar ao sistema utilizando o mesmo nome.
+        - logout
+            - Deletar <nome> do dicionário criado
+        - list:myacmd
+            - Deve ser listado as acomodações com suas listas de clientes:
+                - Deve conter nome, localização, dia disponíveis e dias indisponíveis com nome do cliente que reservou a acomodação
+                - As informações do cliente deve ser dado por: nome, ip, socket
+        - list:acmd
+            - Deve ser listado todas acomodações disponíveis 
+                - Deve conter nome, localização, descrição, dias disponíveis, nome do ofertante da acomodação.
+        - list:myrsv
+            - Deve ser listado as acomodações reservadas do cliente com [<nome_ofertante>/<IP>:<SOCKET>]<mensagem>
+                - Em que <mensagem> é a informação da reserva com: nome, localização, dia reservado
+        - create <nome_da_acomodação> <localização> <id>
+            - Deve ser considerado como padrão: Dias de disponibilidade por acomodação (17/07/2024 à 22/07/2024)		
+            - Receber do servidor a seguinte mensagem: acomodação de nome <nome_da_acomodação> criada com sucesso!
+            - Não pode ter mais uma acomodação com nome e localização iguais. 
+                - Caso haja uma tentativa de criar uma acomodação já existente, o cliente deve ser alertado pelo servidor.	
+            - Todos os clientes ativos, excluindo o criador da acomodação, devem receber um aviso em tempo real quando uma nova acomodação for cadastrada. 
+                - Deve seguir a seguinte estrutura: [<nome_cliente>/<IP>:<SOCKET>]<mensagem> 
+        - book <nome_ofertante> <id_oferta> <dia>
+            - Enviar para o cliente uma mensagem de confirmação contendo as informações da reserva. 
+            - Quem ofertou a acomodação deve ser avisado, com a seguinte mensagem: [<nome_cliente>/<IP>:<SOCKET>]<mensagem>. 
+            - O cliente não pode reservar as próprias acomodações
+            - Ao tentar reservar uma acomodação indisponível, ou um dia indisponível, deve ser enviado uma mensagem de indisponibilidade e falha na reserva.
+        - cancel <nome_reserva> <id> <dia>
+            - Ao cancelar a reserva, o servidor deve enviar uma mensagem de confirmação para o cliente
+            - Ao cancelar reserva, quem ofertou a acomodação deve ser avisado, com a seguinte mensagem: [<nome_cliente>/<IP>:<SOCKET>]<mensagem>. 
+            - Ao cancelar a reserva, todos os clientes ativos, excluindo o criador da acomodação, devem receber um aviso em tempo real quanto à disponibilidade da acomodação 
+                - O aviso deve seguir a seguinte estrutura: [<nome_cliente>/<IP>:<SOCKET>] novas disponibilidades para a acomodação <nome_da_acomodação> <localização> <id>
+        
+- Cliente UDP
+    - Chat
+    - Múltiplas portas
